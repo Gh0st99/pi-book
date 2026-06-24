@@ -57,7 +57,7 @@ sequenceDiagram
     participant User
     participant Editor as Editor - TUI
     participant Agent as Agent
-    participant Loop as agentLoop
+    participant AgentLoop as agentLoop
     participant Transform as transformContext
     participant Convert as convertToLlm
     participant Provider as LLM Provider
@@ -67,49 +67,49 @@ sequenceDiagram
     User->>Editor: 输入消息 + Enter
     Editor->>Agent: agent.prompt(msg)
     Note over Agent: 添加用户消息到 state.messages
-    Agent->>Loop: runAgentLoop(prompts, context, config)
+    Agent->>AgentLoop: runAgentLoop(prompts, context, config)
     
     rect rgb(230, 245, 255)
-        Note over Loop,Convert: 上下文准备阶段
-        Loop->>Transform: transformContext(messages)
+        Note over AgentLoop,Convert: 上下文准备阶段
+        AgentLoop->>Transform: transformContext(messages)
         Note over Transform: 可注入 plan 指令、截断历史、<br/>过滤敏感信息
-        Transform-->>Loop: pruned messages
-        Loop->>Convert: convertToLlm(messages)
+        Transform-->>AgentLoop: pruned messages
+        AgentLoop->>Convert: convertToLlm(messages)
         Note over Convert: AgentMessage → ai 层 Message<br/>过滤/转换应用层消息
-        Convert-->>Loop: LLM-compatible messages
+        Convert-->>AgentLoop: LLM-compatible messages
     end
     
     rect rgb(255, 245, 230)
-        Note over Loop,Provider: 模型调用阶段
-        Loop->>Provider: streamSimple(model, context)
+        Note over AgentLoop,Provider: 模型调用阶段
+        AgentLoop->>Provider: streamSimple(model, context)
         Note over Provider: HTTP SSE 流式调用
-        Provider-->>Loop: events (text_delta, toolcall_end, done)
-        Loop->>Agent: emit(message_end)
+        Provider-->>AgentLoop: events (text_delta, toolcall_end, done)
+        AgentLoop->>Agent: emit(message_end)
         Agent->>Session: persist entry
     end
     
     alt has tool calls
         rect rgb(230, 255, 230)
-            Note over Loop,Tool: 三阶段工具执行
-            Loop->>Tool: prepareToolCall()
+            Note over AgentLoop,Tool: 三阶段工具执行
+            AgentLoop->>Tool: prepareToolCall()
             Note over Tool: 获取资源、权限检查<br/>beforeToolCall 钩子在此触发
-            Tool-->>Loop: prepared (or denied)
-            Loop->>Tool: executePreparedToolCall()
+            Tool-->>AgentLoop: prepared (or denied)
+            AgentLoop->>Tool: executePreparedToolCall()
             Note over Tool: 实际执行操作<br/>（bash 命令、文件读写等）
-            Tool-->>Loop: result
-            Loop->>Tool: finalizeExecutedToolCall()
+            Tool-->>AgentLoop: result
+            AgentLoop->>Tool: finalizeExecutedToolCall()
             Note over Tool: 格式化结果、截断过长输出
-            Tool-->>Loop: final result
+            Tool-->>AgentLoop: final result
         end
-        Loop->>Agent: emit(tool_execution_end)
+        AgentLoop->>Agent: emit(tool_execution_end)
         Note over Agent: UI / extension 观察工具完成
-        Loop->>Agent: emit(message_end)
+        AgentLoop->>Agent: emit(message_end)
         Agent->>Session: persist toolResult message
-        Note over Loop: 回到上下文准备阶段，进入下一轮
-        Loop->>Provider: next LLM call (with tool results)
+        Note over AgentLoop: 回到上下文准备阶段，进入下一轮
+        AgentLoop->>Provider: next LLM call (with tool results)
     end
     
-    Loop->>Agent: emit(agent_end)
+    AgentLoop->>Agent: emit(agent_end)
     Agent->>Session: session complete
     Agent->>Editor: render final state
 ```
