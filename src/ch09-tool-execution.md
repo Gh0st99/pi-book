@@ -253,32 +253,32 @@ async function executeToolCalls(...) {
 
 ```mermaid
 sequenceDiagram
-    participant Loop as Agent Loop
+    participant A as Agent Loop
     participant P as Prepare
     participant E as Execute
     participant F as Finalize
 
-    Note over Loop: === Sequential 模式 ===
-    Loop->>P: prepare(tool_1)
+    Note over A: === Sequential 模式 ===
+    A->>P: prepare(tool_1)
     P-->>E: prepared
     E-->>F: executed
-    F-->>Loop: result_1
-    Loop->>P: prepare(tool_2)
+    F-->>A: result_1
+    A->>P: prepare(tool_2)
     P-->>E: prepared
     E-->>F: executed
-    F-->>Loop: result_2
+    F-->>A: result_2
 
-    Note over Loop: === Parallel 模式 ===
-    Loop->>P: prepare(tool_1)
-    P-->>Loop: prepared_1
-    Loop->>P: prepare(tool_2)
-    P-->>Loop: prepared_2
-    Loop->>E: execute(prepared_1) 同时
-    Loop->>E: execute(prepared_2) 同时
+    Note over A: === Parallel 模式 ===
+    A->>P: prepare(tool_1)
+    P-->>A: prepared_1
+    A->>P: prepare(tool_2)
+    P-->>A: prepared_2
+    A->>E: execute(prepared_1) 同时
+    A->>E: execute(prepared_2) 同时
     E-->>F: executed_1
-    F-->>Loop: result_1
+    F-->>A: result_1
     E-->>F: executed_2
-    F-->>Loop: result_2
+    F-->>A: result_2
 ```
 
 **Sequential 模式**：每个工具调用独立完成整条管道（prepare → execute → finalize），然后才开始下一个。简单、可预测、但慢。
